@@ -1,9 +1,9 @@
 import { html, mount, $, on, extLink } from '../lib/dom.js';
-import { get } from '../lib/api.js';
+import { get, withBudgetRetry } from '../lib/api.js';
 import * as store from '../lib/store.js';
 import { session } from '../lib/session.js';
 import { I } from '../lib/icons.js';
-import { changeView, priceView, provenance, errorState, emptyState, notice, setTitle, skeletonRows, fmtDate, fmtRelative } from '../lib/ui.js';
+import { changeView, priceView, provenance, errorState, emptyState, notice, setTitle, skeletonRows, fmtDate, fmtRelative, budgetWaitState } from '../lib/ui.js';
 import { fmtMoney, fmtPct, fmtDateTime } from '/shared/format.js';
 
 export function dataNotice() {
@@ -42,7 +42,7 @@ export default async function dashboard({ root, signal }) {
     const box = $('#proxies', root); const mv = $('#movers', root);
     if (session.caps?.marketData?.status !== 'configured') { mount(box, ''); mount(mv, emptyState('No market data', 'Configure a provider to see movers.')); return; }
     try {
-      const o = await get('/api/market/overview', { signal });
+      const o = await withBudgetRetry(() => get('/api/market/overview', { signal }), { signal, onWait: (s) => mount(box, budgetWaitState(s)) });
       store.ingestQuotes(Object.fromEntries(o.proxies.map((p) => [p.symbol, p.quote])));
       $('#dash-sub', root).textContent = `${o.state.label}${o.state.reason ? ` · ${o.state.reason}` : ''} · last session ${fmtDate(o.state.lastSessionDate)}`;
       const drawProxies = () => mount(box, o.proxies.map((p) => {
@@ -118,7 +118,7 @@ export default async function dashboard({ root, signal }) {
     const box = $('#news', root);
     if (session.caps?.marketData?.status !== 'configured') { mount(box, emptyState('No news source', 'News appears once a market-data provider is configured.')); return; }
     try {
-      const n = await get('/api/market/news', { signal });
+      const n = await withBudgetRetry(() => get('/api/market/news', { signal }), { signal, onWait: (s) => mount(box, budgetWaitState(s)) });
       $('#news-meta', root).textContent = `${n.source === 'massive' ? 'Massive' : n.source} · retrieved ${fmtRelative(n.retrievedAt)}${n.stale ? ' · stale' : ''}`;
       mount(box, n.articles.length ? html`<div class="list">${n.articles.slice(0, 6).map((a) => html`<article class="list-row" style="align-items:flex-start"><div style="min-width:0">
         <h3 class="small" style="font-weight:600">${extLink(a.url, a.title)}</h3>

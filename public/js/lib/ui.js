@@ -66,6 +66,7 @@ export function confirmDialog({ title, message, confirm = 'Confirm', danger = fa
 }
 
 // ---------- states ----------
+export const budgetWaitState = (secs) => html`<div class="state" role="status"><span class="spinner"></span><span class="small">The free data plan allows 5 requests a minute — loading in ${secs}s…</span></div>`;
 export const loadingState = (label = 'Loading') => html`<div class="state" role="status"><span class="spinner"></span><span class="small">${label}…</span></div>`;
 export const skeletonRows = (n = 4) => html`<div class="stack" aria-hidden="true">${Array.from({ length: n }, () => raw('<div class="skeleton" style="height:18px"></div>'))}</div>`;
 

@@ -34,3 +34,21 @@ export const post = (p, body, o) => api(p, { ...o, method: 'POST', body: body ??
 export const put = (p, body, o) => api(p, { ...o, method: 'PUT', body });
 export const patch = (p, body, o) => api(p, { ...o, method: 'PATCH', body });
 export const del = (p, o) => api(p, { ...o, method: 'DELETE' });
+
+/**
+ * Retries a request when the server reports the market-data budget is used up
+ * (HTTP 429 with retryAfter). onWait(seconds) lets the UI show a countdown.
+ * Bounded: at most 2 retries, each wait capped at 60s; aborts with the signal.
+ */
+export async function withBudgetRetry(fn, { onWait, signal, retries = 2 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await fn(); } catch (e) {
+      const wait = e instanceof ApiError && e.status === 429 ? Number(e.details?.retryAfter) : NaN;
+      if (attempt >= retries || !Number.isFinite(wait) || wait > 60 || signal?.aborted) throw e;
+      for (let left = Math.ceil(wait) + 1; left > 0; left--) {
+        onWait?.(left);
+        await new Promise((r, j) => { const t = setTimeout(r, 1000); signal?.addEventListener('abort', () => { clearTimeout(t); j(new DOMException('Aborted', 'AbortError')); }, { once: true }); });
+      }
+    }
+  }
+}

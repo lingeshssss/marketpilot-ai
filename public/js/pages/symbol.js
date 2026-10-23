@@ -1,10 +1,10 @@
 import { html, raw, mount, $, $$, on, extLink, esc } from '../lib/dom.js';
-import { get, post, ApiError } from '../lib/api.js';
+import { get, post, ApiError, withBudgetRetry } from '../lib/api.js';
 import * as store from '../lib/store.js';
 import { session } from '../lib/session.js';
 import { I } from '../lib/icons.js';
 import {
-  changeView, priceView, provenance, errorState, emptyState, notice, setTitle, loadingState, openDialog, toast, fmtDate, fmtDateTime, fmtRelative,
+  changeView, priceView, provenance, errorState, emptyState, notice, setTitle, loadingState, openDialog, toast, fmtDate, fmtDateTime, fmtRelative, budgetWaitState,
 } from '../lib/ui.js';
 import { fmtPrice, fmtPct, fmtNumber, fmtCompact, fmtMoney } from '/shared/format.js';
 import { riskReward, WARMUP } from '/shared/analysis.js';
@@ -63,8 +63,8 @@ export default async function symbolPage({ root, params, query, signal, navigate
   async function loadCore(force = false) {
     const [qr, an, prof] = await Promise.allSettled([
       store.load([symbol], { force }),
-      get(`/api/instruments/${symbol}/analysis`, { signal }),
-      state.profile ? Promise.resolve(null) : get(`/api/instruments/${symbol}/fundamentals`, { signal }),
+      withBudgetRetry(() => get(`/api/instruments/${symbol}/analysis`, { signal }), { signal }),
+      state.profile ? Promise.resolve(null) : withBudgetRetry(() => get(`/api/instruments/${symbol}/fundamentals`, { signal }), { signal }),
     ]);
     if (an.status === 'fulfilled') state.analysis = an.value;
     else if (an.reason?.name !== 'AbortError') state.analysisError = an.reason;
@@ -119,11 +119,11 @@ export default async function symbolPage({ root, params, query, signal, navigate
     try {
       let bars, intraday = false, note = '';
       if (r[1] === 'intraday') {
-        const h = await get(`/api/instruments/${symbol}/history?intradayDays=${r[2]}`, { signal });
+        const h = await withBudgetRetry(() => get(`/api/instruments/${symbol}/history?intradayDays=${r[2]}`, { signal }), { signal, onWait: (n) => mount(box, budgetWaitState(n)) });
         bars = h.bars; intraday = true;
         note = `${h.minutes}-minute bars, ${fmtDate(h.from)}${h.from !== h.to ? ` – ${fmtDate(h.to)}` : ''}, including extended hours, exchange time (ET). Source ${h.source}${h.stale ? ' · stale' : ''}.`;
       } else {
-        if (!state.daily) state.daily = await get(`/api/instruments/${symbol}/history`, { signal });
+        if (!state.daily) state.daily = await withBudgetRetry(() => get(`/api/instruments/${symbol}/history`, { signal }), { signal, onWait: (n) => mount(box, budgetWaitState(n)) });
         const d = state.daily;
         bars = rangeSlice(d.bars);
         note = `Daily bars through ${fmtDate(d.bars.at(-1)?.date)} · ${d.adjustment} · source ${d.source} · retrieved ${fmtRelative(d.retrievedAt)}${d.stale ? ' · stale (provider unavailable)' : ''}. Indicators use full history, then the view is trimmed.`;
@@ -153,7 +153,7 @@ export default async function symbolPage({ root, params, query, signal, navigate
     wrap.hidden = !state.compare;
     if (!state.compare || !state.daily) return;
     try {
-      const spy = await get('/api/instruments/SPY/history', { signal });
+      const spy = await withBudgetRetry(() => get('/api/instruments/SPY/history', { signal }), { signal, onWait: (n) => mount($('#cmp', root), budgetWaitState(n)) });
       const from = state.visibleFrom || state.daily.bars[0].date;
       const aligned = alignIndexed(state.daily.bars.filter((b) => b.date >= from), spy.bars.filter((b) => b.date >= from));
       if (!aligned) { mount($('#cmp', root), emptyState('No overlap', 'No common trading dates.')); return; }
@@ -272,7 +272,7 @@ export default async function symbolPage({ root, params, query, signal, navigate
   async function drawNews(panel) {
     mount(panel, loadingState('Loading news'));
     try {
-      const n = await get(`/api/instruments/${symbol}/news`, { signal });
+      const n = await withBudgetRetry(() => get(`/api/instruments/${symbol}/news`, { signal }), { signal, onWait: (s) => mount(panel, budgetWaitState(s)) });
       const s = n.sentiment;
       mount(panel, html`<div class="split"><section class="card flush" aria-labelledby="news-h"><div class="card-head pad"><h2 id="news-h">Recent news</h2><span class="xs subtle">Retrieved ${fmtDateTime(n.retrievedAt)}${n.stale ? ' · stale' : ''}</span></div>
         ${n.articles.length ? html`<div class="list" style="padding:0 12px 8px">${n.articles.map((a) => html`<article class="list-row" style="align-items:flex-start">
@@ -289,7 +289,7 @@ export default async function symbolPage({ root, params, query, signal, navigate
 
   // ---------- fundamentals ----------
   async function drawFundamentals(panel) {
-    if (!state.fund) { mount(panel, loadingState()); try { state.fund = await get(`/api/instruments/${symbol}/fundamentals`, { signal }); } catch (e) { mount(panel, errorState(e)); return; } }
+    if (!state.fund) { mount(panel, loadingState()); try { state.fund = await withBudgetRetry(() => get(`/api/instruments/${symbol}/fundamentals`, { signal }), { signal, onWait: (s) => mount(panel, budgetWaitState(s)) }); } catch (e) { if (e.name !== 'AbortError') mount(panel, errorState(e)); return; } }
     const f = state.fund; const p = f.profile.data;
     const unavailable = (x, what) => html`<p class="small muted">${what}: ${x.error?.message || 'unavailable'}</p>`;
     mount(panel, html`<div class="grid grid-2">
