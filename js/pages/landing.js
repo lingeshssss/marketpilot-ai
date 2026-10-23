@@ -12,7 +12,7 @@ export function renderLandingPage(navigate) {
           <div class="sidebar-logo">M</div>
           <div class="sidebar-brand">
             <span class="sidebar-brand-name">MarketPilot</span>
-            <span class="sidebar-brand-tag">AI Insights</span>
+            <span class="sidebar-brand-tag">Research workspace</span>
           </div>
         </div>
         <div class="landing-nav-links">
@@ -27,15 +27,13 @@ export function renderLandingPage(navigate) {
         <div class="hero-content">
           <div class="hero-badge">
             <span class="pulse-dot"></span>
-            AI-Powered Analysis Engine
+            A calmer way to explore the market
           </div>
           <h1 class="hero-title">
-            <span class="text-gradient">AI-Powered</span> Stock Insight,<br/>
-            Risk Signals & Sell Timing Intelligence
+            A clearer view.<br/><span class="text-gradient">A calmer perspective.</span>
           </h1>
           <p class="hero-subtitle">
-            Analyze market conditions in near real time with probabilistic insights, technical signals,
-            and data-driven sell timing intelligence. No guesswork — just actionable scenarios.
+            Bring market snapshots, watchlists, and technical research into one considered workspace. Explore with sample data at your own pace.
           </p>
           <div class="hero-actions">
             <button class="btn btn-primary btn-lg" data-page="dashboard">
@@ -62,7 +60,7 @@ export function renderLandingPage(navigate) {
           <div class="feature-card">
             <div class="feature-card-icon" style="background:var(--accent-glow);">${ICONS.brain}</div>
             <h3>AI Insight Engine</h3>
-            <p>Natural-language analysis combining technical indicators, sentiment, and market data to generate clear, probabilistic outlooks for any stock.</p>
+            <p>Natural-language analysis combining technical indicators, sentiment, and market data to generate clear, probabilistic outlooks for supported sample stocks.</p>
           </div>
           <div class="feature-card">
             <div class="feature-card-icon" style="background:var(--green-bg);">${ICONS.chart}</div>
@@ -86,7 +84,7 @@ export function renderLandingPage(navigate) {
           </div>
           <div class="feature-card">
             <div class="feature-card-icon" style="background:rgba(34,211,238,0.1);">${ICONS.zap}</div>
-            <h3>Real-Time Signals</h3>
+            <h3>Signal Explorer</h3>
             <p>Trend, momentum, sentiment, and sell pressure scores update dynamically. Signal states range from "Buy Watch" to "Sell Risk Elevated."</p>
           </div>
         </div>
@@ -99,7 +97,7 @@ export function renderLandingPage(navigate) {
         </div>
         <div style="max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:32px;">
           ${[
-            { step: '01', title: 'Search Any Stock', desc: 'Enter a ticker symbol to instantly load price data, technicals, fundamentals, and recent news.' },
+            { step: '01', title: 'Find a Company', desc: 'Choose a supported sample company to explore its price chart, technicals, and example news.' },
             { step: '02', title: 'Review AI Analysis', desc: 'Our AI engine processes technical indicators, sentiment, and market context to generate probabilistic insights.' },
             { step: '03', title: 'Understand the Signals', desc: 'Each insight explains WHY it appears. RSI elevated? Volume spike? Approaching resistance? Everything is transparent.' },
             { step: '04', title: 'Make Informed Decisions', desc: 'Use the sell timing module, risk scores, and scenario analysis to support your investment research — never as the sole factor.' },
@@ -134,3 +132,4 @@ export function renderLandingPage(navigate) {
     </div>
   `;
 }
+

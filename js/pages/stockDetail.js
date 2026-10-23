@@ -1,3 +1,4 @@
+const chartColor = token => getComputedStyle(document.documentElement).getPropertyValue(token).trim();
 // ============================================================
 // MarketPilot AI — Stock Detail Page
 // ============================================================
@@ -452,9 +453,6 @@ function renderStockNews(ticker) {
 
 export function initStockDetail(ticker, navigate) {
   // Wiring nav
-  document.querySelectorAll('[data-page]').forEach(el => {
-    el.addEventListener('click', () => navigate(el.dataset.page));
-  });
 
   // Watchlist toggle
   initWatchlistToggle();
@@ -536,6 +534,7 @@ function getPriceHistory(ticker, period) {
 }
 
 function loadPriceChart(ticker, period) {
+  if (typeof Chart === 'undefined') return;
   const canvas = document.getElementById('price-chart');
   if (!canvas) return;
 
@@ -551,7 +550,7 @@ function loadPriceChart(ticker, period) {
   });
 
   const isUp = prices[prices.length - 1] >= prices[0];
-  const mainColor = isUp ? '#34d399' : '#f87171';
+  const mainColor = isUp ? chartColor('--green') : chartColor('--red');
 
   const ctx = canvas.getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -573,11 +572,11 @@ function loadPriceChart(ticker, period) {
   const indicators = getActiveIndicators();
   if (indicators.includes('sma') && prices.length >= 20) {
     const sma = calculateSMA(prices, 20);
-    datasets.push({ label: 'SMA 20', data: sma, borderColor: '#818cf8', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 });
+    datasets.push({ label: 'SMA 20', data: sma, borderColor: chartColor('--accent-primary'), borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 });
   }
   if (indicators.includes('ema') && prices.length >= 20) {
     const ema = calculateEMA(prices, 20);
-    datasets.push({ label: 'EMA 20', data: ema, borderColor: '#fbbf24', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 });
+    datasets.push({ label: 'EMA 20', data: ema, borderColor: chartColor('--amber'), borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.3 });
   }
   if (indicators.includes('bb') && prices.length >= 20) {
     const bb = calculateBollingerBands(prices, 20);
@@ -597,14 +596,14 @@ function loadPriceChart(ticker, period) {
       plugins: {
         legend: {
           display: true,
-          labels: { color: '#94a3b8', font: { size: 11, family: 'Inter' }, boxWidth: 12, boxHeight: 2 }
+          labels: { color: chartColor('--text-secondary'), font: { size: 11, family: 'Inter' }, boxWidth: 12, boxHeight: 2 }
         },
         tooltip: {
-          backgroundColor: 'rgba(15,23,42,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: chartColor('--bg-card-solid'),
+          borderColor: chartColor('--border-default'),
           borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
+          titleColor: chartColor('--text-secondary'),
+          bodyColor: chartColor('--text-primary'),
           callbacks: {
             label: ctx => ` $${ctx.parsed.y?.toFixed(2) || ''}`
           }
@@ -612,15 +611,15 @@ function loadPriceChart(ticker, period) {
       },
       scales: {
         x: {
-          ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 8 },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.06)' }
+          ticks: { color: chartColor('--text-muted'), font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: chartColor('--border-subtle') },
+          border: { color: chartColor('--border-subtle') }
         },
         y: {
           position: 'right',
-          ticks: { color: '#64748b', font: { size: 10, family: 'JetBrains Mono' }, callback: v => '$' + v.toFixed(0) },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.06)' }
+          ticks: { color: chartColor('--text-muted'), font: { size: 10, family: 'JetBrains Mono' }, callback: v => '$' + v.toFixed(0) },
+          grid: { color: chartColor('--border-subtle') },
+          border: { color: chartColor('--border-subtle') }
         }
       }
     }
@@ -628,6 +627,7 @@ function loadPriceChart(ticker, period) {
 }
 
 function loadRSIChart(ticker) {
+  if (typeof Chart === 'undefined') return;
   const canvas = document.getElementById('rsi-chart');
   const badge = document.getElementById('rsi-badge');
   if (!canvas) return;
@@ -646,7 +646,7 @@ function loadRSIChart(ticker) {
     badge.textContent = `${currentRSI.toFixed(1)} · ${rsiLabel}`;
   }
 
-  const rsiColor = currentRSI > 70 ? '#f87171' : currentRSI < 30 ? '#34d399' : '#818cf8';
+  const rsiColor = currentRSI > 70 ? chartColor('--red') : currentRSI < 30 ? chartColor('--green') : chartColor('--accent-primary');
   new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
@@ -669,11 +669,11 @@ function loadRSIChart(ticker) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15,23,42,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: chartColor('--bg-card-solid'),
+          borderColor: chartColor('--border-default'),
           borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
+          titleColor: chartColor('--text-secondary'),
+          bodyColor: chartColor('--text-primary'),
           callbacks: { label: c => ` RSI: ${c.parsed.y?.toFixed(1)}` }
         },
         annotation: {}
@@ -682,8 +682,8 @@ function loadRSIChart(ticker) {
         x: { display: false },
         y: {
           min: 0, max: 100,
-          ticks: { color: '#64748b', font: { size: 9 }, stepSize: 30 },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: chartColor('--text-muted'), font: { size: 9 }, stepSize: 30 },
+          grid: { color: chartColor('--border-subtle') },
           border: { display: false }
         }
       }
@@ -692,6 +692,7 @@ function loadRSIChart(ticker) {
 }
 
 function loadMACDChart(ticker) {
+  if (typeof Chart === 'undefined') return;
   const canvas = document.getElementById('macd-chart');
   const badge = document.getElementById('macd-badge');
   if (!canvas) return;
@@ -722,8 +723,8 @@ function loadMACDChart(ticker) {
       labels,
       datasets: [
         { label: 'Histogram', data: hist, backgroundColor: histColors, borderRadius: 2 },
-        { type: 'line', label: 'MACD', data: macdLine, borderColor: '#818cf8', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
-        { type: 'line', label: 'Signal', data: sigLine, borderColor: '#fbbf24', backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { type: 'line', label: 'MACD', data: macdLine, borderColor: chartColor('--accent-primary'), backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { type: 'line', label: 'Signal', data: sigLine, borderColor: chartColor('--amber'), backgroundColor: 'transparent', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
       ]
     },
     options: {
@@ -732,21 +733,21 @@ function loadMACDChart(ticker) {
       plugins: {
         legend: {
           display: true,
-          labels: { color: '#94a3b8', font: { size: 9 }, boxWidth: 8, boxHeight: 2 }
+          labels: { color: chartColor('--text-secondary'), font: { size: 9 }, boxWidth: 8, boxHeight: 2 }
         },
         tooltip: {
-          backgroundColor: 'rgba(15,23,42,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: chartColor('--bg-card-solid'),
+          borderColor: chartColor('--border-default'),
           borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
+          titleColor: chartColor('--text-secondary'),
+          bodyColor: chartColor('--text-primary'),
         }
       },
       scales: {
         x: { display: false },
         y: {
-          ticks: { color: '#64748b', font: { size: 9 } },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: chartColor('--text-muted'), font: { size: 9 } },
+          grid: { color: chartColor('--border-subtle') },
           border: { display: false }
         }
       }
@@ -801,3 +802,4 @@ function loadSupportResistance(ticker) {
     </div>
   `;
 }
+

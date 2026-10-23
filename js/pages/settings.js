@@ -1,3 +1,4 @@
+import { getAppearance, setAppearance } from '../appearance.js';
 // ============================================================
 // MarketPilot AI — Settings Page
 // ============================================================
@@ -77,8 +78,7 @@ export function renderSettings(navigate) {
               <div class="settings-desc">Color theme for the interface</div>
             </div>
             <div class="radio-group">
-              <div class="radio-option active">Dark</div>
-              <div class="radio-option" style="opacity:0.4;cursor:not-allowed;" title="Coming soon">Light</div>
+              ${['system', 'light', 'dark'].map(theme => `<button type="button" class="radio-option ${getAppearance() === theme ? 'active' : ''}" data-theme-choice="${theme}" aria-pressed="${getAppearance() === theme}">${theme[0].toUpperCase() + theme.slice(1)}</button>`).join('')}
             </div>
           </div>
           <div class="settings-row">
@@ -129,6 +129,16 @@ export function renderSettings(navigate) {
 }
 
 export function initSettings(navigate) {
+  document.querySelectorAll('[data-theme-choice]').forEach(button => {
+    button.addEventListener('click', () => {
+      setAppearance(button.dataset.themeChoice);
+      document.querySelectorAll('[data-theme-choice]').forEach(option => {
+        const selected = option === button;
+        option.classList.toggle('active', selected);
+        option.setAttribute('aria-pressed', String(selected));
+      });
+    });
+  });
   // Risk tolerance
   document.querySelectorAll('#risk-tolerance .radio-option').forEach(opt => {
     opt.addEventListener('click', () => {
@@ -157,3 +167,4 @@ export function initSettings(navigate) {
     });
   });
 }
+
