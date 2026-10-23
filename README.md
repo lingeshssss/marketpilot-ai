@@ -1,117 +1,57 @@
-# MarketPilot AI
+# MarketPilot
 
-MarketPilot AI is a modern web-based stock analysis platform that provides data-driven insights, technical indicators, and probabilistic signals to help users better understand market trends and make informed decisions.
+A stock and ETF research workspace: timestamped quotes, charts, transparent technical analysis,
+grounded AI explanations, watchlists, a transaction-based portfolio tracker, and alerts evaluated
+on the server.
 
----
+Nothing on screen is random. When a data source is missing or failing, MarketPilot shows the last
+known value labelled **stale**, or **unavailable** — never a simulated substitute. A clearly
+labelled **demo mode** with synthetic data exists for development only.
 
-## Features
+## Architecture
+- **Front end:** vanilla ES modules (`public/js`), History-API routes, lightweight-charts (vendored).
+- **Shared calculation layer:** `public/shared/*` — exchange calendar, indicators, analysis object,
+  portfolio accounting, alert evaluation, screen filters. Used identically by server, jobs and browser.
+- **API:** one Vercel Node function (`api/index.js` → `server/app.js`).
+- **Data:** Postgres (any provider) with SQL migrations; Better Auth sessions; Massive market data;
+  Anthropic for AI; Resend for email.
+- **Jobs:** `/api/cron/{market,scanner,alerts,deliveries,all}` — lease-locked, idempotent, recorded in `job_runs`.
 
-* Stock Search & Dashboard
-
-  * Search any ticker (AAPL, NVDA, TSLA, etc.)
-  * View market overview and top movers
-
-* Interactive Charts
-
-  * Time ranges (1D → 5Y)
-  * Technical indicators:
-
-    * RSI
-    * MACD
-    * SMA / EMA
-
-* AI Insight Engine
-
-  * Bull vs Bear case analysis
-  * Momentum and trend summary
-  * Entry and exit (sell) zones
-  * Confidence and risk scoring
-
-* Signal System
-
-  * Trend score
-  * Momentum score
-  * Sentiment score
-  * Risk indicators
-  * Buy / Hold / Sell signals
-
-* Opportunity Scanner
-
-  * RSI extremes
-  * Volume spikes
-  * Breakouts
-  * Support/resistance proximity
-
-* News + Sentiment Analysis
-
-  * Market news summaries
-  * Positive vs negative sentiment
-
-* Watchlist
-
-  * Track selected stocks
-  * Monitor performance
-
----
-
-## Tech Stack
-
-* Frontend: HTML, CSS, JavaScript
-* Architecture: Modular component-based structure
-* Data: Mock data (ready for real API integration)
-
----
-
-## Getting Started
-
-### Run Locally
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/lingeshssss/marketpilot-ai.git
+```
+public/            static app (index.html, css, js, shared, vendor)
+server/            routes, auth, db, market provider + service, jobs, ai
+migrations/        forward-only SQL
+tests/unit         calculations, calendar, accounting, grounding (no I/O)
+tests/integration  real Postgres (PGlite) + HTTP + auth, MOCKED provider
+tests/e2e          Playwright journeys (demo data, desktop + phone)
+docs/              AUDIT, ANALYSIS, ACCOUNTING, OPERATIONS, CHECKLIST
+DESIGN.md          design system, screens, motion, accessibility
 ```
 
-2. Navigate into the project:
-
+## Run locally
 ```bash
-cd marketpilot-ai
+npm install
+npm run build              # vendors chart library
+npm run dev -- --demo      # http://localhost:3000, synthetic data, embedded Postgres, email outbox at /__dev/outbox
+# or with real data:
+MARKET_DATA_PROVIDER=massive MASSIVE_API_KEY=... npm run dev
+```
+Populate background data locally: `curl -X POST -H "Authorization: Bearer dev-cron-secret-local" localhost:3000/api/cron/all`.
+
+## Test
+```bash
+npm run check              # syntax, no Math.random in app code, demo isolation, secret scan
+npm run typecheck          # JSDoc type contracts (tsc --checkJs)
+npm run test:unit
+npm run test:integration   # mocked provider
+npm run test:e2e           # demo data, desktop + phone
+npm run smoke:provider     # LIVE Massive API — needs MASSIVE_API_KEY
 ```
 
-3. Run `python3 -m http.server 8000` in the project folder, then open `http://localhost:8000`. ES modules require an HTTP server.
+## Configure & deploy
+See `.env.example` for every variable and `docs/OPERATIONS.md` for provider choice, licensing,
+migration, backfill, scheduling, backups, deployment and rollback.
 
----
-
-## Future Improvements
-
-* Real-time stock data integration (Polygon, Alpha Vantage, etc.)
-* Backend API for data processing
-* Advanced AI model integration
-* Portfolio tracking with persistent storage
-* Alerts and notifications system
-* Mobile optimization
-
----
-
-## Disclaimer
-
-This project is for educational and informational purposes only.
-It does not provide financial advice, and no outcomes are guaranteed.
-All insights are probabilistic and should not be used as the sole basis for investment decisions.
-
----
-
-## Author
-
-Lingesh Sashi Kumar
-
----
-
-## Contributing
-
-Contributions, issues, and feature requests are welcome.
-
-
-## Adaptive Apple-inspired interface
-
-See [DESIGN.md](DESIGN.md) for palette, screen layouts, material treatment, accessibility, motion, and verification limits. Appearance supports System, Light, and Dark and is saved on your device. The app opens the dashboard and uses a sidebar on desktop and a five-tab bar on mobile. All prices, signals, news, alerts, and portfolio positions remain simulated.
+## Disclosures
+Research tool only. Not investment advice. Scores are heuristics, not probabilities. Market data
+timeliness and source are shown next to every price.

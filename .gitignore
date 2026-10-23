@@ -1,5 +1,9 @@
 node_modules/
+.data/
 .env
-dist/
-build/
-.DS_Store
+.env.*
+!.env.example
+.vercel
+public/vendor/
+test-results/
+playwright-report/
