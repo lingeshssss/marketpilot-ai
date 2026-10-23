@@ -69,7 +69,7 @@ MarketPilot AI is a modern web-based stock analysis platform that provides data-
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/lsk91908/marketpilot-ai.git
+git clone https://github.com/lingeshssss/marketpilot-ai.git
 ```
 
 2. Navigate into the project:
@@ -78,8 +78,7 @@ git clone https://github.com/lsk91908/marketpilot-ai.git
 cd marketpilot-ai
 ```
 
-3. Open `index.html` in your browser
-   OR run with a local server (recommended)
+3. Run `python3 -m http.server 8000` in the project folder, then open `http://localhost:8000`. ES modules require an HTTP server.
 
 ---
 
@@ -111,3 +110,8 @@ Lingesh Sashi Kumar
 ## Contributing
 
 Contributions, issues, and feature requests are welcome.
+
+
+## Adaptive Apple-inspired interface
+
+See [DESIGN.md](DESIGN.md) for palette, screen layouts, material treatment, accessibility, motion, and verification limits. Appearance supports System, Light, and Dark and is saved on your device. The app opens the dashboard and uses a sidebar on desktop and a five-tab bar on mobile. All prices, signals, news, alerts, and portfolio positions remain simulated.

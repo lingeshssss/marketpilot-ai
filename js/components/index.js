@@ -39,35 +39,35 @@ export function renderSidebar(currentPage, navigate) {
         <div class="sidebar-logo">M</div>
         <div class="sidebar-brand">
           <span class="sidebar-brand-name">MarketPilot</span>
-          <span class="sidebar-brand-tag">AI Insights</span>
+          <span class="sidebar-brand-tag">Research workspace</span>
         </div>
       </div>
-      <nav class="sidebar-nav">
+      <nav class="sidebar-nav" aria-label="Main navigation">
         <div class="nav-section-title">Main</div>
-        <div class="nav-item ${currentPage === 'landing' ? 'active' : ''}" data-page="landing">
+        <button type="button" class="nav-item ${currentPage === 'landing' ? 'active' : ''}" data-page="landing">
           ${ICONS.home} <span>Home</span>
-        </div>
-        <div class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}" data-page="dashboard">
+        </button>
+        <button type="button" class="nav-item ${currentPage === 'dashboard' ? 'active' : ''}" data-page="dashboard">
           ${ICONS.dashboard} <span>Dashboard</span>
-        </div>
-        <div class="nav-item ${currentPage === 'scanner' ? 'active' : ''}" data-page="scanner">
+        </button>
+        <button type="button" class="nav-item ${currentPage === 'scanner' ? 'active' : ''}" data-page="scanner">
           ${ICONS.scanner} <span>Scanner</span>
           <span class="nav-badge">New</span>
-        </div>
+        </button>
 
         <div class="nav-section-title">Analysis</div>
-        <div class="nav-item ${currentPage === 'watchlist' ? 'active' : ''}" data-page="watchlist">
+        <button type="button" class="nav-item ${currentPage === 'watchlist' ? 'active' : ''}" data-page="watchlist">
           ${ICONS.star} <span>Watchlist</span>
           <span class="nav-badge">${getWatchlist().length}</span>
-        </div>
-        <div class="nav-item ${currentPage === 'portfolio' ? 'active' : ''}" data-page="portfolio">
+        </button>
+        <button type="button" class="nav-item ${currentPage === 'portfolio' ? 'active' : ''}" data-page="portfolio">
           ${ICONS.briefcase} <span>Portfolio</span>
-        </div>
+        </button>
 
         <div class="nav-section-title">System</div>
-        <div class="nav-item ${currentPage === 'settings' ? 'active' : ''}" data-page="settings">
+        <button type="button" class="nav-item ${currentPage === 'settings' ? 'active' : ''}" data-page="settings">
           ${ICONS.settings} <span>Settings</span>
-        </div>
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-disclaimer">
@@ -82,21 +82,21 @@ export function renderSidebar(currentPage, navigate) {
 export function renderHeader() {
   return `
     <header class="header" id="header">
-      <button class="mobile-menu-btn" id="mobile-menu-btn">
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open navigation" aria-expanded="false">
         ${ICONS.menu}
       </button>
       <div class="search-container">
         <span class="search-icon">${ICONS.search}</span>
-        <input class="search-input" id="search-input" type="text" placeholder="Search stocks... (e.g. AAPL, NVDA, TSLA)" autocomplete="off" />
+        <input class="search-input" id="search-input" type="text" aria-label="Search stocks by name or symbol" placeholder="Search companies or symbols" autocomplete="off" />
         <span class="search-shortcut">/</span>
         <div class="search-dropdown" id="search-dropdown"></div>
       </div>
-      <div class="header-actions">
-        <button class="header-btn tooltip" data-tooltip="Alerts" id="alerts-btn">
+      <span class="demo-label">Sample data</span><div class="header-actions">
+        <button class="header-btn tooltip" data-tooltip="Alerts" id="alerts-btn" aria-label="Sample alerts">
           ${ICONS.bell}
-          <span class="notification-dot"></span>
+          
         </button>
-        <button class="header-btn tooltip" data-tooltip="Settings" id="settings-nav-btn" data-page="settings">
+        <button class="header-btn tooltip" data-tooltip="Settings" id="settings-nav-btn" aria-label="Settings" data-page="settings">
           ${ICONS.settings}
         </button>
       </div>
@@ -119,13 +119,13 @@ export function initSearch(navigate) {
     ).slice(0, 8);
 
     if (results.length === 0) {
-      dropdown.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.85rem;">No results for "${input.value.trim()}"</div>`;
+      dropdown.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.85rem;">No matching companies. Try AAPL or Microsoft.</div>`;
     } else {
       dropdown.innerHTML = results.map(s => {
         const change = ((Math.random() - 0.45) * 5).toFixed(2);
         const isUp = parseFloat(change) >= 0;
         return `
-          <div class="search-result-item" data-ticker="${s.ticker}">
+          <button type="button" class="search-result-item" data-ticker="${s.ticker}">
             <div class="search-result-info">
               <span class="search-result-ticker">${s.ticker}</span>
               <span class="search-result-name">${s.name}</span>
@@ -134,7 +134,7 @@ export function initSearch(navigate) {
               <div class="search-result-price">$${s.price.toFixed(2)}</div>
               <div style="font-size:0.75rem;font-family:var(--font-mono);color:${isUp ? 'var(--green)' : 'var(--red)'};">${isUp ? '+' : ''}${change}%</div>
             </div>
-          </div>
+          </button>
         `;
       }).join('');
     }
@@ -166,19 +166,7 @@ export function initSearch(navigate) {
     }
   });
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-container')) {
-      dropdown.classList.remove('visible');
-    }
-  });
 
-  // Global shortcut
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== input) {
-      e.preventDefault();
-      input.focus();
-    }
-  });
 }
 
 // --- MARKET OVERVIEW CARDS ---
@@ -198,7 +186,7 @@ export function renderMarketCards() {
               <span style="color:var(--text-muted);font-size:0.75rem;">(${isUp ? '+' : ''}${idx.changeAmt.toFixed(2)})</span>
             </div>
             <div class="market-card-sparkline">
-              <canvas class="sparkline-canvas" data-values="${sparkData.join(',')}" data-color="${isUp ? '#34d399' : '#f87171'}" width="200" height="32"></canvas>
+              <canvas class="sparkline-canvas" data-values="${sparkData.join(',')}" data-color="${getComputedStyle(document.documentElement).getPropertyValue(isUp ? '--green' : '--red').trim()}" width="200" height="32"></canvas>
             </div>
           </div>
         `;
@@ -379,12 +367,12 @@ export function renderAISummaryCard() {
         <div class="insight-icon" style="background:var(--accent-glow);">
           ${ICONS.brain}
         </div>
-        <div class="insight-card-title">AI Market Summary</div>
-        <span class="badge badge-blue">Live</span>
+        <div class="insight-card-title">Market brief</div>
+        <span class="badge badge-blue">Illustrative</span>
       </div>
       <div class="insight-card-body">
         <p>Markets are showing <strong>mixed signals</strong> today. The technology sector continues to lead with AI-driven growth, while energy faces headwinds from declining oil prices.</p>
-        <p style="margin-top:10px;">Probability favors continued upside in large-cap tech names, though elevated valuations suggest maintaining disciplined position sizing. The Fed's latest commentary hints at potential rate adjustments, which could benefit growth stocks if confirmed.</p>
+        <p style="margin-top:10px;">This example scenario illustrates an upside case in large-cap tech names, though elevated valuations suggest maintaining disciplined position sizing. The Fed's latest commentary hints at potential rate adjustments, which could benefit growth stocks if confirmed.</p>
         <p style="margin-top:10px;color:var(--text-muted);font-size:0.8rem;font-style:italic;">⚠️ This is a probabilistic market summary, not investment advice. All conclusions are scenario-based.</p>
       </div>
     </div>
@@ -395,7 +383,7 @@ export function renderAISummaryCard() {
 export function renderDisclaimer() {
   return `
     <div class="disclaimer-bar">
-      <strong>⚠️ Disclaimer:</strong> This platform provides probabilistic market insights for educational and informational purposes only. It does not provide personalized financial advice or guarantee outcomes.
+      <span class="sample-dot"></span><strong>Sample workspace</strong><span>Simulated prices, news, signals, and holdings. For exploration only.</span>
     </div>
   `;
 }
@@ -448,3 +436,4 @@ export function initWatchlistToggle() {
     });
   });
 }
+

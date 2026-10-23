@@ -1,3 +1,4 @@
+import './appearance.js';
 // ============================================================
 // MarketPilot AI — Main App Router & Entry Point
 // ============================================================
@@ -12,20 +13,26 @@ import { renderPortfolio, initPortfolio } from './pages/portfolio.js';
 import { renderSettings, initSettings } from './pages/settings.js';
 
 // ---- STATE ----
-let currentPage = 'landing';
+let currentPage = 'dashboard';
 let currentTicker = null;
 
 // ---- ROUTER ----
 function navigate(page, param = null) {
-  currentPage = page;
-  currentTicker = param;
+  const allowed = ['landing', 'dashboard', 'stock', 'scanner', 'watchlist', 'portfolio', 'settings'];
+  currentPage = allowed.includes(page) ? page : 'dashboard';
+  currentTicker = param && /^[A-Z0-9.-]{1,10}$/.test(param) ? param : null;
+  history.replaceState(null, '', `#${currentPage}${currentTicker ? '/' + currentTicker : ''}`);
   render();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  const heading = document.querySelector('.page-title, .hero-title');
+  if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
 }
 
 // ---- RENDER ----
 function render() {
   const app = document.getElementById('app');
+  document.getElementById('alerts-modal')?.remove();
+  document.querySelectorAll('canvas').forEach(canvas => window.Chart?.getChart(canvas)?.destroy());
 
   if (currentPage === 'landing') {
     app.innerHTML = renderLandingPage(navigate);
@@ -37,10 +44,11 @@ function render() {
   app.innerHTML = `
     <div class="app-layout">
       ${renderSidebar(currentPage, navigate)}
-      <div class="main-content" id="main-content">
+      <main class="main-content" id="main-content">
         ${renderHeader()}
-        <div id="page-root"></div>
-      </div>
+        <div id="page-root" tabindex="-1"></div>
+      </main>
+      ${renderMobileTabs()}
     </div>
   `;
 
@@ -89,8 +97,8 @@ function render() {
     }
   });
 
-  // Show ticker tape
-  setTimeout(() => createTickerTape(), 150);
+  // Apply keyboard and assistive technology support
+  enhanceControls();
 }
 
 // ---- SIDEBAR INTERACTIONS ----
@@ -106,15 +114,9 @@ function initSidebar() {
   if (menuBtn && sidebar) {
     menuBtn.addEventListener('click', () => {
       sidebar.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(sidebar.classList.contains('open')));
     });
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-      if (sidebar.classList.contains('open') &&
-          !sidebar.contains(e.target) &&
-          !menuBtn.contains(e.target)) {
-        sidebar.classList.remove('open');
-      }
-    });
+
   }
 }
 
@@ -124,7 +126,7 @@ function initHeader() {
   document.getElementById('alerts-btn')?.addEventListener('click', showAlertsModal);
 
   // Settings button in header
-  document.getElementById('settings-nav-btn')?.addEventListener('click', () => navigate('settings'));
+  
 
   // Any [data-page] buttons in header
   document.querySelectorAll('#header [data-page]').forEach(el => {
@@ -156,8 +158,8 @@ function showAlertsModal() {
 
   modal.innerHTML = `
     <div style="padding:16px 20px;border-bottom:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;">
-      <div style="font-weight:600;font-size:0.9rem;">Smart Alerts</div>
-      <button id="close-alerts" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:18px;">✕</button>
+      <div style="font-weight:600;font-size:0.9rem;">Sample alerts</div>
+      <button id="close-alerts" aria-label="Close alerts" style="color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:18px;">✕</button>
     </div>
     <div style="max-height:360px;overflow-y:auto;">
       ${alerts.map(a => `
@@ -176,7 +178,10 @@ function showAlertsModal() {
     </div>
   `;
 
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-label', 'Sample alerts');
   document.body.appendChild(modal);
+  document.getElementById('close-alerts')?.focus();
 
   document.getElementById('close-alerts')?.addEventListener('click', () => modal.remove());
 
@@ -187,15 +192,7 @@ function showAlertsModal() {
     });
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', function handler(e) {
-      if (!modal.contains(e.target) && e.target !== document.getElementById('alerts-btn')) {
-        modal.remove();
-        document.removeEventListener('click', handler);
-      }
-    });
-  }, 50);
+
 }
 
 // ---- LANDING PAGE INTERACTIONS ----
@@ -205,77 +202,66 @@ function initLandingPage() {
   });
 }
 
-// ---- LIVE TICKER TAPE ----
-function createTickerTape() {
-  if (currentPage === 'landing') return;
-
-  // Remove any existing tape first
-  document.getElementById('ticker-tape')?.remove();
-
-  const tickers = [
-    { t: 'AAPL', p: 218.27, c: 0.82 },
-    { t: 'NVDA', p: 142.65, c: 1.34 },
-    { t: 'TSLA', p: 271.83, c: -2.14 },
-    { t: 'MSFT', p: 428.50, c: 0.45 },
-    { t: 'AMZN', p: 198.42, c: 0.92 },
-    { t: 'GOOGL', p: 167.52, c: 0.31 },
-    { t: 'META', p: 612.30, c: 1.45 },
-    { t: 'AMD',  p: 114.82, c: -0.78 },
-    { t: 'JPM',  p: 252.40, c: 0.22 },
-    { t: 'NFLX', p: 1028.30, c: 2.15 },
-  ];
-
-  const existing = document.getElementById('ticker-tape');
-  if (existing) existing.remove();
-
-  const tape = document.createElement('div');
-  tape.id = 'ticker-tape';
-  tape.style.cssText = `
-    position:fixed;bottom:0;left:var(--sidebar-width);right:0;
-    height:32px;background:rgba(12,17,32,0.95);
-    border-top:1px solid var(--border-subtle);
-    backdrop-filter:var(--glass-blur);
-    overflow:hidden;z-index:50;display:flex;align-items:center;
-  `;
-
-  const content = tickers.map(t => {
-    const isUp = t.c >= 0;
-    return `
-      <span style="display:inline-flex;align-items:center;gap:8px;padding:0 20px;white-space:nowrap;">
-        <span style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);">${t.t}</span>
-        <span style="font-family:var(--font-mono);font-size:0.72rem;">$${t.p.toFixed(2)}</span>
-        <span style="font-family:var(--font-mono);font-size:0.72rem;color:${isUp ? 'var(--green)' : 'var(--red)'};">${isUp ? '▲' : '▼'} ${Math.abs(t.c).toFixed(2)}%</span>
-      </span>
-    `;
-  }).join('<span style="color:var(--border-default);padding:0 4px;">·</span>');
-
-  tape.innerHTML = `
-    <div style="display:flex;animation:scroll-tape 30s linear infinite;width:max-content;">
-      ${content}${content}
-    </div>
-  `;
-
-  document.body.appendChild(tape);
-
-  // Add scrolling keyframe
-  if (!document.getElementById('ticker-style')) {
-    const style = document.createElement('style');
-    style.id = 'ticker-style';
-    style.textContent = `
-      @keyframes scroll-tape {
-        from { transform: translateX(0); }
-        to { transform: translateX(-50%); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // Adjust main content bottom padding
-  const mainContent = document.getElementById('main-content');
-  if (mainContent) mainContent.style.paddingBottom = '32px';
+function renderMobileTabs() {
+  return `<nav class="mobile-tabs" aria-label="Primary navigation">${[
+    ['dashboard', 'dashboard', 'Today'], ['watchlist', 'star', 'Watchlist'],
+    ['scanner', 'scanner', 'Explore'], ['portfolio', 'briefcase', 'Portfolio'],
+    ['settings', 'settings', 'Settings']
+  ].map(([page, icon, label]) => `<button type="button" data-page="${page}" ${currentPage === page ? 'aria-current="page"' : ''}>${ICONS[icon]}<span>${label}</span></button>`).join('')}</nav>`;
 }
+
+// Give existing interactive rows keyboard equivalents without changing their actions.
+function enhanceControls() {
+  document.querySelectorAll('.nav-item.active').forEach(el => el.setAttribute('aria-current', 'page'));
+  document.querySelectorAll('[data-ticker], .card-action, .tab, .radio-option, .filter-chip').forEach(el => {
+    if (el.matches('button, input, a') || el.closest('button')) return;
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.click(); }
+    });
+  });
+  document.querySelectorAll('.toggle-switch').forEach(el => {
+    const locked = !el.dataset.toggle;
+    el.tabIndex = locked ? -1 : 0;
+    el.setAttribute('role', 'switch');
+    el.setAttribute('aria-label', el.closest('.settings-row')?.querySelector('.settings-label')?.textContent || 'Preference');
+    const sync = () => el.setAttribute('aria-checked', String(el.classList.contains('active')));
+    sync();
+    el.addEventListener('click', sync);
+    el.addEventListener('keydown', event => {
+      if (!locked && (event.key === ' ' || event.key === 'Enter')) { event.preventDefault(); el.click(); }
+    });
+  });
+}
+
+document.addEventListener('click', event => {
+  if (!event.target.closest('.search-container')) document.getElementById('search-dropdown')?.classList.remove('visible');
+  const sidebar = document.getElementById('sidebar');
+  if (!event.target.closest('#sidebar, #mobile-menu-btn')) {
+    sidebar?.classList.remove('open');
+    document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+  }
+});
+document.addEventListener('keydown', event => {
+  if (event.key === '/' && !event.target.matches('input, textarea, select, [contenteditable]')) {
+    event.preventDefault(); document.getElementById('search-input')?.focus();
+  }
+  if (event.key === 'Escape') {
+    const modal = document.getElementById('alerts-modal');
+    if (modal) { modal.remove(); document.getElementById('alerts-btn')?.focus(); }
+    document.getElementById('sidebar')?.classList.remove('open');
+    document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+  }
+});
 
 // ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
-  render();
+  const [page, ticker] = location.hash.slice(1).split('/');
+  navigate(page || 'dashboard', ticker);
 });
+window.addEventListener('hashchange', () => {
+  const [page, ticker] = location.hash.slice(1).split('/');
+  navigate(page || 'dashboard', ticker);
+});
+

@@ -111,7 +111,5 @@ export function initWatchlist(navigate) {
     });
   });
 
-  document.querySelectorAll('[data-page]').forEach(el => {
-    el.addEventListener('click', () => navigate(el.dataset.page));
-  });
 }
+

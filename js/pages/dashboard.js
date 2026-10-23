@@ -16,13 +16,13 @@ export function renderDashboard(navigate) {
       ${renderDisclaimer()}
       <div class="page-heading">
         <div>
-          <h1 class="page-title">Dashboard</h1>
-          <p style="color:var(--text-muted);font-size:0.875rem;margin-top:2px;">Market overview · ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1 class="page-title">Your market, at a glance.</h1>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-top:2px;">Today · ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--green);">
             <span style="width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;display:inline-block;"></span>
-            Markets Open
+            Sample market snapshot
           </div>
         </div>
       </div>
@@ -150,3 +150,4 @@ export function initDashboard(navigate) {
     card.addEventListener('click', () => navigate('stock', card.dataset.ticker));
   });
 }
+
