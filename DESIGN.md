@@ -1,56 +1,80 @@
 # MarketPilot design specification
 
-MarketPilot is an adaptive web research workspace for iPhone, iPad, and Mac browsers. This implementation follows Apple HIG principles; it is not a native SwiftUI app or an exact implementation of Apple's system Liquid Glass renderer.
+MarketPilot is an adaptive web research workspace for iPhone, iPad and Mac browsers. It follows Apple
+Human Interface Guidelines principles where they apply to the web; it is not a native app and does not
+reproduce Apple's system materials exactly. This revision builds on PR #1 (`design/apple-inspired-workspace`)
+and applies it to the working, data-backed product.
 
 ## 1. Design system
 
+Tokens live in `public/css/app.css` (`:root`, redefined for dark mode and for Increase Contrast).
+
 | Token | Light | Dark |
 | --- | --- | --- |
-| Canvas | #F5F5F7 | #111214 |
-| Content surface | #FFFFFF | #1C1D21 |
+| Canvas `--bg` | #F5F5F7 | #000000 |
+| Content surface `--surface` | #FFFFFF | #1C1C1E |
 | Primary text | #1D1D1F | #F5F5F7 |
-| Secondary text | #515560 | #C0C3CC |
-| Accent / links | #0067D8 | #70B3FF |
-| Positive | #137743 | #64D99B |
-| Negative | #C12E39 | #FF8790 |
-| Caution | #8B5900 | #F5C568 |
+| Secondary text `--text-2` | #3C3C43 | #D1D1D6 |
+| Tertiary text `--text-3` (never lighter) | #5E5E66 (6.3:1) | #A1A1AA |
+| Accent / links | #0A66D6 / #0058C4 | #3D9BFF / #6CB2FF |
+| Positive | #0B7A3E (5.5:1) | #34C77B |
+| Negative | #C4261D (5.6:1) | #FF6B61 |
+| Caution | #8A5300 | #FFB340 |
+| Chart series (validated for CVD & contrast) | #0A66D6, #B26B00, #7A3FBF | #2A86EA, #C9800F, #9B72EA |
 
-Use the platform system font stack, which selects San Francisco on Apple devices. Page titles scale from 28 to 40px, section titles use 16–20px semibold, and body text uses relative units. Numbers use tabular spacing. This supports browser text scaling; native Dynamic Type integration would require a native application.
+- **Type:** platform system stack (San Francisco on Apple devices). Size-specific tracking: display
+  text −0.024em, body −0.011em, small text 0. Numbers use tabular figures everywhere. Sizes are in rem
+  so browser text scaling works.
+- **Spacing:** 4pt grid (`--s1`…`--s10`), 16px phone gutters, 24px desktop gutters, 16–22px radii.
+- **Targets:** 40px controls with a pointer, **44px on touch** (`pointer: coarse`).
+- **Materials:** translucent blur is reserved for chrome — sidebar, toolbar, tab bar, ticker. All
+  financial text and charts sit on solid surfaces. Reduce Transparency and Increase Contrast switch
+  chrome to solid and strengthen borders.
+- **Direction is never colour-only:** changes carry ▲/▼ glyphs, signs and accessible labels.
 
-Use a 4px spacing base, 16px mobile gutters, 24px card padding, 24px section gaps, and 40px desktop gutters. Cards have 20–24px corners. Primary controls have at least 44px target heights. Switches have an expanded hit area. Safe-area insets protect headers and bottom navigation.
+## 2. Screens
 
-Glass is reserved for the toolbar, sidebar, and mobile tab bar. Financial text and charts sit on solid surfaces. Materials use 24px backdrop blur with a solid fallback. Reduce Transparency and Increase Contrast preferences remove translucent backgrounds. Icons are consistent outline SVGs with SF Symbol-like metaphors: square grid, star, viewfinder, briefcase, and gear. They are not bundled SF Symbols assets.
+| Screen | Route | Layout |
+| --- | --- | --- |
+| Dashboard | `/` | data-source notice → four ETF benchmarks (SPY, QQQ, DIA, IWM) with session & timeliness → movers in the stated scan universe → market news (publisher, time, link) → portfolio → watchlist → recent alerts |
+| Symbol | `/symbols/:symbol?tab=` | name, price, change, provenance → actions → tabs: Overview (chart, key stats, signal summary), Analysis, Exit scenarios, News, Fundamentals, AI explanation |
+| Scanner | `/scanner?screen=` | filter panel (AND/OR, numeric, signals, type, sector, presets, saved screens) → sortable paged results with "why it matched" |
+| Watchlists | `/watchlists/:id` | list tabs → items with reorder, notes, undoable removal, import/export |
+| Portfolios | `/portfolios/:id` | totals (value, day P&L, unrealized, realized + dividends) → holdings & allocation → performance → transactions → method |
+| Alerts | `/alerts` | rules with enable switches and last observation → history with delivery status |
+| Settings | `/settings` | appearance → notifications → data sources & configuration issues → account (export, sample data, delete) |
+| Auth | `/signin` `/signup` `/forgot-password` `/reset-password` | single card |
 
-## 2. Core screen layouts
-
-**Today:** Search toolbar → sample-data context → large page title and date → four market snapshots → market brief → movers, sectors, and example news. Desktop places the watchlist and portfolio summary in a supporting column; mobile stacks content and provides five persistent tabs.
-
-**Company:** Company name and price → watchlist action → time-range controls and price chart → technical indicators → analysis tabs and explanatory context. Risk information uses labels as well as color. An unsupported ticker shows a recovery action.
-
-**Watchlist:** Saved sample companies with prices and signals. Search adds supported companies through their detail screen; an empty watchlist provides a dashboard action.
-
-**Explore:** Filter controls → ranked sample setups → company detail. Filters remain keyboard accessible; narrower layouts wrap controls.
-
-**Portfolio:** Existing example positions and allocation information remain available. Holdings are simulated, not brokerage balances.
-
-**Settings:** Grouped preference cards → System / Light / Dark segmented control → analysis and example alert preferences → about. Appearance persists on the device and follows OS changes in System mode.
-
-**About / landing:** Concise headline → two clear entry actions → feature cards → explanation and disclosures. The initial app route opens Today; the Home sidebar item opens the introduction.
+Desktop uses a sidebar; phones use a five-tab bar (Dashboard, Scanner, Watchlists, Portfolios, Alerts)
+with Settings in the toolbar. Safe-area insets pad the toolbar, tab bar, ticker and sheets.
 
 ## 3. Interaction and motion
 
-- Pointer-down feedback scales buttons to 97% over 100ms. Release returns to rest through the existing spring-like cubic-bezier timing. This is CSS easing, not a native physics spring.
-- Page entry fades and translates 6px over 320ms. Keep chart transitions subtle; no continuous ticker tape or blinking signal dots.
-- Reduce Motion disables CSS animation and transitions. No artificial loading delay is introduced for synchronous sample data.
-- Empty search and unsupported ticker states explain recovery. Search results are buttons; Enter opens an exact symbol and Escape dismisses search.
-- A visible focus ring, skip link, labeled icon buttons, keyboard activation of existing rows, switch states, and current-navigation announcements support keyboard and assistive technology use.
-- Route changes move focus to the heading. Escape closes the example alerts and restores focus. Refresh preserves the current hash route.
-- Loading from an unavailable external Chart.js CDN must leave the rest of the detail screen operable. Live-data loading, retry, and stale-data handling remain backend work.
+- Press feedback on pointer-down: 97% scale over 100ms.
+- Sheets and switches use a critically damped spring curve (CSS `linear()` approximation, ~0.32s);
+  sheets enter from the bottom on phones and dismiss the same way. CSS transitions retarget from the
+  current value, so they can be interrupted.
+- Pages enter with a 320ms fade and 6px rise. The ticker scrolls only if enabled, pauses on hover or
+  focus, has a visible pause button, and is static under Reduce Motion.
+- Reduce Motion replaces movement with opacity changes and turns off shimmer and page entry.
+- Prices change only when the provider returns a new observation (`quoteId`), never on a timer.
 
-## Scope and validation
+## 4. Accessibility
 
-The app retains simulated prices, generated signals, example news, sample holdings, and existing local watchlist behavior. It does not gain real market APIs, LLM inference, brokerage integration, or server storage through this design change.
+Skip link, landmark navigation, `aria-current` on nav, labelled icon buttons, a WAI-ARIA combobox for
+search ("/" focuses it), tabs with arrow-key navigation, native `<dialog>` with focus moved in and
+restored to the opener, focus moved to the page heading after navigation, visible focus rings,
+`aria-live` toasts and status regions, `aria-sort` on sortable columns, and a data-table alternative
+for charts.
 
-JavaScript syntax checks and render/appearance smoke checks are run locally. A local HTTP server could not bind under the execution sandbox, and the supplied Vercel preview requires login. Visual browser QA and a deployment check are therefore still required before production release.
+## 5. Honesty in the interface
 
-References: [Materials](https://developer.apple.com/design/human-interface-guidelines/materials), [Motion](https://developer.apple.com/design/human-interface-guidelines/motion), [Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility), [Typography](https://developer.apple.com/design/human-interface-guidelines/typography).
+Every price shows its session, market time, timeliness (end-of-day, delayed, real-time, demo) and
+source; stale or unavailable data is labelled, never replaced. Scores are labelled heuristics.
+Disclosures sit next to the decision they qualify instead of in banner blocks.
+
+References: Apple HIG — [Materials](https://developer.apple.com/design/human-interface-guidelines/materials),
+[Motion](https://developer.apple.com/design/human-interface-guidelines/motion),
+[Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility),
+[Typography](https://developer.apple.com/design/human-interface-guidelines/typography),
+[Charts](https://developer.apple.com/design/human-interface-guidelines/charts).
